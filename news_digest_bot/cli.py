@@ -10,12 +10,13 @@ from .fetcher import fetch_all
 from .formatter import to_markdown
 from .notifiers import build_notifiers
 from .processing import SentStore, dedupe
+from .site import build_site
 from .summarizer import summarize
 
 log = logging.getLogger("news_digest_bot")
 
 
-def run(config_path: str, dry_run: bool, db_path: str, output_dir: str) -> int:
+def run(config_path: str, dry_run: bool, db_path: str, output_dir: str, site_dir: str = "site") -> int:
     cfg = load_config(config_path)
     store = SentStore(db_path)
     try:
@@ -37,11 +38,16 @@ def run(config_path: str, dry_run: bool, db_path: str, output_dir: str) -> int:
         out.parent.mkdir(parents=True, exist_ok=True)
         out.write_text(to_markdown(digest), encoding="utf-8")
         log.info("摘要已存到 %s", out)
+        index = build_site(digest, site_dir)
+        log.info("網頁已產生：%s（用瀏覽器打開即可）", index.resolve())
 
         if dry_run:
             print(to_markdown(digest))
             return 0
-        for notifier in build_notifiers(cfg.channels):
+        notifiers = build_notifiers(cfg.channels)
+        if not notifiers:
+            log.info("沒有設定任何推播管道的金鑰，只產生網頁")
+        for notifier in notifiers:
             notifier.send(digest)
             log.info("已推播到 %s", notifier.name)
         store.mark_sent([it.url for it in digest.items])
@@ -56,8 +62,9 @@ def main(argv: list[str] | None = None) -> None:
     p.add_argument("--dry-run", action="store_true", help="只印出摘要，不推播")
     p.add_argument("--db", default="data/sent.db")
     p.add_argument("--output", default="output")
+    p.add_argument("--site", default="site", help="網頁輸出資料夾")
     p.add_argument("-v", "--verbose", action="store_true")
     args = p.parse_args(argv)
     logging.basicConfig(level=logging.DEBUG if args.verbose else logging.INFO,
                         format="%(asctime)s %(levelname)s %(name)s: %(message)s")
-    raise SystemExit(run(args.config, args.dry_run, args.db, args.output))
+    raise SystemExit(run(args.config, args.dry_run, args.db, args.output, args.site))

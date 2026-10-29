@@ -27,10 +27,11 @@ def test_line_push_vs_broadcast(digest):
     assert session.post.call_args[0][0].endswith("/broadcast")
 
 
-def test_missing_env_gives_clear_error(monkeypatch):
+def test_channels_without_key_are_skipped(monkeypatch):
     monkeypatch.delenv("DISCORD_WEBHOOK_URL", raising=False)
-    with pytest.raises(RuntimeError, match="DISCORD_WEBHOOK_URL"):
-        build_notifiers(["discord"])
+    assert build_notifiers(["discord"]) == []
+    monkeypatch.setenv("DISCORD_WEBHOOK_URL", "https://discord/webhook")
+    assert [n.name for n in build_notifiers(["discord"])] == ["discord"]
     with pytest.raises(ValueError):
         build_notifiers(["telegram"])
 

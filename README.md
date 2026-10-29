@@ -9,15 +9,16 @@
 - **爬蟲**：用 RSS 取得新聞清單，再抓原文頁面萃取內文（自動移除導覽列、廣告、script），抓取失敗時退回 RSS 摘要。以多執行緒並行抓取。
 - **資料處理**：網址正規化（去除 `utm_*`、`fbclid` 等追蹤參數）、以網址與標題相似度去重、用 SQLite 記錄已推播的新聞，隔天不重複推送。
 - **AI 摘要**：支援 Google Gemini（有免費額度）與 Anthropic Claude 兩家 LLM，用環境變數切換。一次把當天新聞交給模型，用 **JSON Schema 結構化輸出** 拿回「標題、摘要、分類、重要性分數」，程式端再驗證 ID、排序、截斷。英文新聞會自動翻成中文。
-- **推播**：Discord Webhook（彩色 embed 卡片，依重要性上色）與 LINE Messaging API（push 或 broadcast），用統一的 `Notifier` 介面，新增平台只要多寫一個類別。
-- **自動化**：GitHub Actions 每天台灣時間 08:00 自動執行，金鑰放在 GitHub Secrets。
-- **測試**：23 個 pytest 測試，所有網路與 LLM 呼叫都用 mock，CI 不需要金鑰。
+- **網頁**：每次執行產生靜態網頁（卡片排版、重要性標籤、分類篩選、深色模式、歷史摘要），自動部署到 GitHub Pages。
+- **推播（選填）**：Discord Webhook（彩色 embed 卡片，依重要性上色）與 LINE Messaging API（push 或 broadcast），用統一的 `Notifier` 介面，新增平台只要多寫一個類別。
+- **自動化**：GitHub Actions 每天台灣時間 08:00 自動執行並更新網頁，金鑰放在 GitHub Secrets。
+- **測試**：24 個 pytest 測試，所有網路與 LLM 呼叫都用 mock，CI 不需要金鑰。
 
 ## 架構
 
 ```
 config.yaml ──► fetcher.py ──► processing.py ──► summarizer.py ──► notifiers/
- (新聞來源)     RSS + 原文爬取   去重 / 已推播過濾    Gemini / Claude 摘要   Discord / LINE
+ (新聞來源)     RSS + 原文爬取   去重 / 已推播過濾    Gemini / Claude 摘要   網頁 / Discord / LINE
                                      │                                    │
                                  data/sent.db ◄──────── 推播成功後記錄 ───┘
 ```
@@ -28,6 +29,7 @@ config.yaml ──► fetcher.py ──► processing.py ──► summarizer.py
 | `news_digest_bot/processing.py` | 網址正規化、去重、`SentStore`（SQLite） |
 | `news_digest_bot/summarizer.py` | Prompt 設計、共用 JSON Schema、Gemini / Claude 兩種 provider、拒答與截斷處理 |
 | `news_digest_bot/formatter.py` | Markdown / 純文字排版 |
+| `news_digest_bot/site.py` | 產生靜態網頁與歷史頁（GitHub Pages） |
 | `news_digest_bot/notifiers/` | Discord、LINE 推播 |
 | `news_digest_bot/cli.py` | 串起整條流程的指令列入口 |
 
@@ -38,21 +40,21 @@ config.yaml ──► fetcher.py ──► processing.py ──► summarizer.py
 
 ```powershell
 cd E:\Claude作品集\news-digest-bot
-python -m venv .venv
-.\.venv\Scripts\Activate.ps1          # 若出現「無法載入」，先執行：Set-ExecutionPolicy -Scope CurrentUser RemoteSigned
-pip install -r requirements-dev.txt
+py -m venv .venv
+.\.venv\Scripts\python.exe -m pip install -r requirements-dev.txt
 
-$env:GEMINI_API_KEY = "貼上你的金鑰"     # 只在這個視窗有效
-python -m news_digest_bot --dry-run     # 只印出摘要，不推播
+$env:GEMINI_API_KEY = "貼上你的金鑰"                     # 只在這個視窗有效
+.\.venv\Scripts\python.exe -m news_digest_bot --dry-run  # 不推播，產生 site\index.html
+start site\index.html                                    # 用瀏覽器打開網頁
 
-$env:DISCORD_WEBHOOK_URL = "你的 Webhook 網址"
-python -m news_digest_bot               # 實際推播到 Discord
-pytest -q                               # 跑測試（不需要金鑰）
+.\.venv\Scripts\python.exe -m pytest -q                  # 跑測試（不需要金鑰）
 ```
+
+> 用 `py` 啟動器加上 `.venv\Scripts\python.exe`，可以避開 `python` / `pip` 指令壞掉或 PowerShell 不允許執行 `Activate.ps1` 的問題。
 
 想讓金鑰永久保存，可以改用 `setx GEMINI_API_KEY "金鑰"`，然後重開 PowerShell。
 
-macOS / Linux 的話，把 `.\.venv\Scripts\Activate.ps1` 換成 `source .venv/bin/activate`，`$env:X = "..."` 換成 `export X="..."` 即可。
+macOS / Linux 的話，把 `py` 換成 `python3`、`.\.venv\Scripts\python.exe` 換成 `.venv/bin/python`、`$env:X = "..."` 換成 `export X="..."` 即可。
 
 ## 環境變數
 
@@ -82,13 +84,14 @@ sources:
 
 其他可調整項目：時間窗（`lookback_hours`）、每個來源最多幾則、最終推播幾則、是否抓全文、推播管道。
 
-## 部署到 GitHub Actions
+## 部署到 GitHub（每天自動更新網頁）
 
-> workflow 檔放在 `deploy/github-actions/`。GitHub 只會執行 repo 根目錄 `.github/workflows/` 裡的檔案，請把它們複製過去；若這個資料夾在作品集 repo 的子目錄，記得在步驟裡加上 `working-directory: news-digest-bot`。
+1. **Settings → Secrets and variables → Actions → New repository secret**，新增 `GEMINI_API_KEY`。要推播到 Discord / LINE 的話，再加 `DISCORD_WEBHOOK_URL` 或 LINE 的兩個變數（不加也可以，只產生網頁）。
+2. **Settings → Pages → Build and deployment → Source** 選 **GitHub Actions**。
+3. 到 **Actions → Daily news digest → Run workflow** 手動跑第一次。之後每天台灣時間 08:00 自動執行。
+4. 網頁網址：`https://<你的帳號>.github.io/news-digest-bot/`
 
-1. 到 repo 的 **Settings → Secrets and variables → Actions** 新增 `GEMINI_API_KEY`（或 `ANTHROPIC_API_KEY`）、`DISCORD_WEBHOOK_URL`（或 LINE 的兩個變數）。
-2. `.github/workflows/daily-digest.yml` 會每天 UTC 00:00 執行，也可以在 Actions 頁面手動觸發。
-3. 每次產生的摘要 Markdown 會上傳為 workflow artifact，已推播紀錄用 Actions cache 保留。
+每次執行會把 `site/`（網頁與每天的 JSON）和 `data/sent.db`（已推播紀錄）commit 回 repo，所以歷史摘要會一直累積。
 
 ## 設計重點
 
