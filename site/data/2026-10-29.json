@@ -1,0 +1,96 @@
+{
+  "date": "2026-10-29",
+  "overview": "今日科技與商業焦點集中於科技巨頭在人工智慧領域的擴張與監管挑戰，輝達併購開源社群面臨反壟斷調查，微軟與Google則分別在雲端營收與AI廣告變現上取得進展。此外，蘋果打破多年慣例推出觸控MacBook Pro，重大資安漏洞PHP2Shell的全球威脅亦持續延燒。",
+  "items": [
+    {
+      "article_id": 0,
+      "title": "輝達逾4000億收購Hugging Face，面臨美國反壟斷調查",
+      "summary": "美國司法部已針對輝達以129.3億美元收購AI開源平台Hugging Face的交易展開反壟斷調查，評估是否會使其壟斷AI的核心分發管道。這項調查連同先前針對輝達銷售手法與市場主導地位的調查，可能對整體晶片產業及輝達藉投資併購擴張AI版圖的策略帶來連鎖衝擊。",
+      "category": "科技",
+      "importance": 5,
+      "url": "https://www.cna.com.tw/news/ait/202610290109.aspx",
+      "source": "中央社 CNA"
+    },
+    {
+      "article_id": 21,
+      "title": "微軟連續十季營收創新高，雲端與AI業務表現亮眼",
+      "summary": "微軟公布最新季度財報，營收達923億美元、淨利達366億美元，已連續十個季度創下歷史新高。此波成長主要由微軟雲端推動，其中Azure營收達332億美元，且來自OpenAI的相關商業營收亦達100億美元，展現龐大的AI商業變現能力。",
+      "category": "財經",
+      "importance": 5,
+      "url": "https://techcrunch.com/2026/10/28/microsoft-hits-10-quarters-of-record-breaking-revenue-in-a-row/",
+      "source": "TechCrunch AI"
+    },
+    {
+      "article_id": 1,
+      "title": "蘋果打破慣例，首度推出配備觸控螢幕的MacBook Pro",
+      "summary": "蘋果發表旗下首款搭載觸控螢幕的MacBook Pro，配備M5系列晶片、動態島與PROLED XDR顯示器，打破多年來Mac不具備觸控功能的產品傳統。官方強調在不犧牲機身厚度與重量的前提下導入觸控，旨在為日常操作與專業創作者提供更多便利。",
+      "category": "科技",
+      "importance": 4,
+      "url": "https://www.cna.com.tw/news/ait/202610290028.aspx",
+      "source": "中央社 CNA"
+    },
+    {
+      "article_id": 19,
+      "title": "Google核心搜尋廣告成長放緩，在全球擴大導入AI搜尋廣告",
+      "summary": "由於核心搜尋廣告業務成長率放緩至12%，Google宣布將在國際市場的AI搜尋體驗中擴大導入廣告模式。公司期盼藉由用戶在AI模式下更長、更複雜且包含多模態的查詢行為，將生成式AI轉化為推動廣告營收的新動能。",
+      "category": "科技",
+      "importance": 4,
+      "url": "https://techcrunch.com/2026/10/28/google-expands-ai-search-ads-globally-as-core-ad-growth-slows/",
+      "source": "TechCrunch AI"
+    },
+    {
+      "article_id": 7,
+      "title": "PHP2Shell重大漏洞遭利用，北韓駭客掃描全球多國主機",
+      "summary": "資安研究人員首度在蜜罐中偵測到駭客成功利用PHP2Shell重大漏洞執行Shell指令，疑似北韓駭客組織亦針對全球216台主機展開分批掃描，臺灣政府與金融等單位也被列入目標。此漏洞廣泛波及全球眾多IT與OT系統設備，成為當前網路防禦的緊急威脅。",
+      "category": "資安",
+      "importance": 4,
+      "url": "https://www.ithome.com.tw/news/180068",
+      "source": "iThome"
+    },
+    {
+      "article_id": 22,
+      "title": "Anthropic推出AI支出追蹤工具，助企業量化投資效益",
+      "summary": "Anthropic宣布推出一套全新企業報告工具，能讓企業管理者詳細檢視團隊工作產出、成本及工作流程瓶頸，以掌握Token支出的投資報酬率。隨著旗下程式編碼工具Claude Code帶動現有客戶支出成長達9倍，如何有效評估並最佳化AI支出已成企業導入的關鍵課題。",
+      "category": "科技",
+      "importance": 4,
+      "url": "https://techcrunch.com/2026/10/28/anthropic-just-launched-tools-to-show-companies-what-their-ai-spending-is-buying/",
+      "source": "TechCrunch AI"
+    },
+    {
+      "article_id": 12,
+      "title": "香港宏福苑大火調查報告公布，特首率官員致歉且局長請辭",
+      "summary": "在造成168人死亡的宏福苑大火發生近一年後，相關調查報告正式公開。香港特首李家超首度率領政府官員鞠躬道歉，同時房屋局長也已請辭，為這場重大公共安全災難承擔政治責任。",
+      "category": "國際",
+      "importance": 4,
+      "url": "https://www.bbc.com/zhongwen/articles/c95ynv03lmk8o/trad?at_medium=RSS&at_campaign=rss",
+      "source": "BBC 中文"
+    },
+    {
+      "article_id": 5,
+      "title": "Google推出Connected Apps平臺，第三方服務可介接Gemini與搜尋",
+      "summary": "Google發表Connected Apps平臺預覽版，允許第三方開發者透過模型上下文協定（MCP），將自家服務功能同時串接至Gemini與Google搜尋。該平臺建立了一套統一的審查與發布管道，讓使用者能直接在AI與搜尋介面中操作各類第三方應用服務。",
+      "category": "科技",
+      "importance": 3,
+      "url": "https://www.ithome.com.tw/news/180073",
+      "source": "iThome"
+    },
+    {
+      "article_id": 8,
+      "title": "輝達發表Nemotron 3.5語音模型，整合轉錄、翻譯與講者辨識",
+      "summary": "輝達推出開放權重語音模型Nemotron 3.5 Transcribe，整合了語音轉文字、多語翻譯、講者區分以及錄音內容問答功能。該模型具備340億參數並支援40種語言轉錄，可依自然語言指令直接輸出客製化的會議逐字稿或整理稿。",
+      "category": "科技",
+      "importance": 3,
+      "url": "https://www.ithome.com.tw/news/180065",
+      "source": "iThome"
+    },
+    {
+      "article_id": 10,
+      "title": "macOS 27.2未修補憑證缺陷，Git與curl等工具恐遭中間人攻擊",
+      "summary": "研究人員指出，Apple最新釋出的macOS 27.2內建之Git、curl與Python等命令列工具，仍信任印度憑證機構eMudhra已撤銷的問題憑證。攻擊者若能攔截網路連線，恐藉此偽造網站憑證並竄改下載的程式碼，蘋果已承諾將在後續更新中修復此問題。",
+      "category": "資安",
+      "importance": 3,
+      "url": "https://www.ithome.com.tw/news/180061",
+      "source": "iThome"
+    }
+  ]
+}
