@@ -1,0 +1,29 @@
+# 新聞來源：RSS 取得清單，再爬原文補足內文
+sources:
+  - name: 中央社 CNA
+    url: https://feeds.feedburner.com/rsscna/technology
+    category_hint: 科技
+  - name: iThome
+    url: https://www.ithome.com.tw/rss
+    category_hint: 科技
+  - name: BBC 中文
+    url: https://feeds.bbci.co.uk/zhongwen/trad/rss.xml
+    category_hint: 國際
+  - name: TechCrunch AI
+    url: https://techcrunch.com/category/artificial-intelligence/feed/
+    category_hint: AI
+
+digest:
+  lookback_hours: 24        # 只取最近 N 小時的新聞
+  max_articles_per_source: 8
+  max_items: 10             # 摘要後最多推播幾則
+  fetch_full_text: true     # 是否爬原文頁面（失敗時退回 RSS 摘要）
+  max_chars_per_article: 2500
+  language: 繁體中文
+
+llm:
+  effort: low               # 摘要任務用 low 即可，省 token
+  max_tokens: 16000
+
+notify:
+  channels: [discord]       # 可填 discord、line，或兩者
