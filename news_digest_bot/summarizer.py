@@ -1,11 +1,10 @@
 """AI 摘要：把當天新聞一次交給 Claude，用結構化輸出拿回排序好的摘要。"""
 from __future__ import annotations
 
+import copy
 import json
 import logging
 from datetime import date
-
-import anthropic
 
 from .models import Article, Digest, DigestItem
 
@@ -47,6 +46,12 @@ DIGEST_SCHEMA = {
 }
 
 
+# Gemini 的 JSON Schema 不支援整數 enum，改用 minimum / maximum 表達同樣的範圍
+GEMINI_SCHEMA = copy.deepcopy(DIGEST_SCHEMA)
+GEMINI_SCHEMA["properties"]["items"]["items"]["properties"]["importance"] = {
+    "type": "integer", "minimum": 1, "maximum": 5}
+
+
 class SummaryError(RuntimeError):
     pass
 
@@ -65,18 +70,34 @@ def build_prompt(articles: list[Article], max_items: int, language: str) -> str:
     )
 
 
-def summarize(articles: list[Article], *, model: str, max_items: int = 10,
-              language: str = "繁體中文", effort: str = "low", max_tokens: int = 16000,
-              client: anthropic.Anthropic | None = None) -> Digest:
+DEFAULT_MODELS = {"claude": "claude-opus-5-5", "gemini": "gemini-flash-latest"}
+
+
+def summarize(articles: list[Article], *, provider: str = "claude", model: str | None = None,
+              max_items: int = 10, language: str = "繁體中文", effort: str = "low",
+              max_tokens: int = 16000, client=None) -> Digest:
+    """依 provider 呼叫 Claude 或 Gemini，兩者都用同一份 JSON Schema 取得結構化摘要。"""
     if not articles:
         return Digest(date=date.today().isoformat(), overview="今天沒有新的新聞。")
+    if provider not in DEFAULT_MODELS:
+        raise ValueError(f"不支援的 LLM provider：{provider}（可用 claude 或 gemini）")
+
+    prompt = build_prompt(articles, max_items, language)
+    model = model or DEFAULT_MODELS[provider]
+    call = _call_claude if provider == "claude" else _call_gemini
+    text = call(prompt, model=model, effort=effort, max_tokens=max_tokens, client=client)
+    return parse_digest(json.loads(text), articles, max_items)
+
+
+def _call_claude(prompt: str, *, model: str, effort: str, max_tokens: int, client=None) -> str:
+    import anthropic
 
     client = client or anthropic.Anthropic()  # 從 ANTHROPIC_API_KEY 環境變數讀取金鑰
     response = client.beta.messages.create(
         model=model,
         max_tokens=max_tokens,
         system=SYSTEM_PROMPT,
-        messages=[{"role": "user", "content": build_prompt(articles, max_items, language)}],
+        messages=[{"role": "user", "content": prompt}],
         output_config={"effort": effort, "format": {"type": "json_schema", "schema": DIGEST_SCHEMA}},
         # 安全分類器誤判時，伺服器端自動改用建議的備援模型重跑
         betas=["server-side-fallback-2026-07-01"],
@@ -88,11 +109,38 @@ def summarize(articles: list[Article], *, model: str, max_items: int = 10,
         raise SummaryError(f"模型拒絕回應：{response.stop_details}")
     if response.stop_reason == "max_tokens":
         raise SummaryError("輸出超過 max_tokens，請調高 llm.max_tokens 或減少新聞數量")
-
     text = next((b.text for b in response.content if b.type == "text"), None)
     if text is None:
         raise SummaryError("回應中沒有文字內容")
-    return parse_digest(json.loads(text), articles, max_items)
+    return text
+
+
+def _call_gemini(prompt: str, *, model: str, effort: str, max_tokens: int, client=None) -> str:
+    from google import genai
+    from google.genai import types
+
+    client = client or genai.Client()  # 從 GEMINI_API_KEY 環境變數讀取金鑰
+    response = client.models.generate_content(
+        model=model,
+        contents=prompt,
+        config=types.GenerateContentConfig(
+            system_instruction=SYSTEM_PROMPT,
+            response_mime_type="application/json",
+            response_json_schema=GEMINI_SCHEMA,
+            max_output_tokens=max_tokens,
+        ),
+    )
+    usage = response.usage_metadata
+    if usage:
+        log.info("Gemini 用量：input=%s output=%s", usage.prompt_token_count, usage.candidates_token_count)
+
+    finish = response.candidates[0].finish_reason if response.candidates else None
+    finish = getattr(finish, "name", finish)
+    if finish == "MAX_TOKENS":
+        raise SummaryError("輸出超過 max_tokens，請調高 llm.max_tokens 或減少新聞數量")
+    if not response.text:
+        raise SummaryError(f"Gemini 沒有回傳內容（finish_reason={finish}）")
+    return response.text
 
 
 def parse_digest(data: dict, articles: list[Article], max_items: int) -> Digest:
@@ -104,5 +152,6 @@ def parse_digest(data: dict, articles: list[Article], max_items: int) -> Digest:
             continue
         src = articles[idx]
         items.append(DigestItem(**raw, url=src.url, source=src.source))
+        items[-1].importance = min(max(items[-1].importance, 1), 5)
     items.sort(key=lambda it: it.importance, reverse=True)
     return Digest(date=date.today().isoformat(), overview=data.get("overview", ""), items=items[:max_items])

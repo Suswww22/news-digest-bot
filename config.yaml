@@ -22,7 +22,9 @@ digest:
   language: 繁體中文
 
 llm:
-  effort: low               # 摘要任務用 low 即可，省 token
+  provider: auto            # claude、gemini，或 auto（依有設定的 API 金鑰自動選）
+  # model: gemini-flash-latest  # 不填則用各家預設模型
+  effort: low               # Claude 專用：摘要任務用 low 即可，省 token
   max_tokens: 16000
 
 notify:

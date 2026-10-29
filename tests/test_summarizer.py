@@ -61,3 +61,42 @@ def test_prompt_uses_full_text_when_available(articles):
     prompt = build_prompt(articles, 5, "繁體中文")
     assert "完整內文" in prompt and "簡短描述" not in prompt
     assert '<article id="2"' in prompt
+
+
+class FakeGemini:
+    def __init__(self, payload, finish="STOP"):
+        self.calls = []
+        self.response = SimpleNamespace(
+            text=json.dumps(payload, ensure_ascii=False) if payload else None,
+            candidates=[SimpleNamespace(finish_reason=SimpleNamespace(name=finish))],
+            usage_metadata=SimpleNamespace(prompt_token_count=100, candidates_token_count=50),
+        )
+        self.models = SimpleNamespace(generate_content=self._generate)
+
+    def _generate(self, **kwargs):
+        self.calls.append(kwargs)
+        return self.response
+
+
+def test_gemini_provider_uses_json_schema(articles):
+    client = FakeGemini(PAYLOAD)
+    digest = summarize(articles, provider="gemini", client=client)
+    assert [it.title for it in digest.items] == ["台積電", "資安漏洞"]
+
+    call = client.calls[0]
+    assert call["model"] == "gemini-flash-latest"
+    assert call["config"].response_mime_type == "application/json"
+    importance = call["config"].response_json_schema["properties"]["items"]["items"]["properties"]["importance"]
+    assert importance == {"type": "integer", "minimum": 1, "maximum": 5}
+
+
+def test_gemini_truncated_output_raises(articles):
+    with pytest.raises(SummaryError):
+        summarize(articles, provider="gemini", client=FakeGemini(PAYLOAD, finish="MAX_TOKENS"))
+    with pytest.raises(SummaryError):
+        summarize(articles, provider="gemini", client=FakeGemini(None, finish="SAFETY"))
+
+
+def test_unknown_provider(articles):
+    with pytest.raises(ValueError):
+        summarize(articles, provider="openai")

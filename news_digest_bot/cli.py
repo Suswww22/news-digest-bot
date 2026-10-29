@@ -29,7 +29,8 @@ def run(config_path: str, dry_run: bool, db_path: str, output_dir: str) -> int:
             log.info("沒有新新聞，結束")
             return 0
         # 3. AI 摘要
-        digest = summarize(articles, model=cfg.model, max_items=cfg.max_items, language=cfg.language,
+        log.info("使用 %s 產生摘要", cfg.provider)
+        digest = summarize(articles, provider=cfg.provider, model=cfg.model, max_items=cfg.max_items, language=cfg.language,
                            effort=cfg.effort, max_tokens=cfg.max_tokens)
         # 4. 輸出與推播
         out = Path(output_dir) / f"digest-{digest.date}.md"
