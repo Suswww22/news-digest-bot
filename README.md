@@ -34,7 +34,6 @@ config.yaml ──► fetcher.py ──► processing.py ──► summarizer.py
 ## 快速開始
 
 ```bash
-git clone https://github.com/Suswww22/news-digest-bot.git
 cd news-digest-bot
 python -m venv .venv && source .venv/bin/activate
 pip install -r requirements-dev.txt
@@ -73,6 +72,8 @@ sources:
 其他可調整項目：時間窗（`lookback_hours`）、每個來源最多幾則、最終推播幾則、是否抓全文、推播管道。
 
 ## 部署到 GitHub Actions
+
+> workflow 檔放在 `deploy/github-actions/`。GitHub 只會執行 repo 根目錄 `.github/workflows/` 裡的檔案，請把它們複製過去；若這個資料夾在作品集 repo 的子目錄，記得在步驟裡加上 `working-directory: news-digest-bot`。
 
 1. 到 repo 的 **Settings → Secrets and variables → Actions** 新增 `ANTHROPIC_API_KEY`、`DISCORD_WEBHOOK_URL`（或 LINE 的兩個變數）。
 2. `.github/workflows/daily-digest.yml` 會每天 UTC 00:00 執行，也可以在 Actions 頁面手動觸發。
